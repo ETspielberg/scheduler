@@ -29,12 +29,12 @@ public class SchedulerConfig {
 
     private final static long HalfAYear = 182L * dayInMillis;
 
-    @Scheduled(cron="0 0 1 * * ? *")
+    @Scheduled(cron="0 1 * * 6")
     public void updateNotations() throws IOException {
         callRestService("/services/run/notationbuilder");
     }
 
-    @Scheduled(cron="0 0 2 * * ? *")
+    @Scheduled(cron="0 2 * * *")
     public void updateNrequests() throws IOException {
         callBatchJob("nrequests","");
     }
