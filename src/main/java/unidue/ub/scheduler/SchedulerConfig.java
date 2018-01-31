@@ -31,7 +31,7 @@ public class SchedulerConfig {
 
     @Scheduled(cron="0 0 1 * * 6")
     public void updateNotations() throws IOException {
-        callRestService("/services/run/notationbuilder");
+        callRestService("http://localhost:8082/services/run/notationbuilder");
     }
 
     @Scheduled(cron="0 0 2 * * *")
@@ -48,7 +48,7 @@ public class SchedulerConfig {
     }
 
     private List<? extends Profile> getAllActiveStockcontrol(long interval) throws URISyntaxException {
-        Traverson traverson = new Traverson(new URI("/api/settings/stockcontrol"), MediaTypes.HAL_JSON);
+        Traverson traverson = new Traverson(new URI("http://localhost:8082/api/settings/stockcontrol"), MediaTypes.HAL_JSON);
         Traverson.TraversalBuilder tb = traverson.follow("$._links.self.href");
         ParameterizedTypeReference<Resources<Stockcontrol>> typeRefDevices = new ParameterizedTypeReference<Resources<Stockcontrol>>() {};
         Resources<Stockcontrol> resUsers = tb.toObject(typeRefDevices);
@@ -64,7 +64,7 @@ public class SchedulerConfig {
 
     @Scheduled(cron="0 0 1 15 * ?")
     public void collectSushi() throws URISyntaxException, IOException {
-        Traverson traverson = new Traverson(new URI("/api/settings/sushiprovider"), MediaTypes.HAL_JSON);
+        Traverson traverson = new Traverson(new URI("http://localhost:8082/api/settings/sushiprovider"), MediaTypes.HAL_JSON);
         Traverson.TraversalBuilder tb = traverson.follow("$._links.self.href");
         ParameterizedTypeReference<Resources<Sushiprovider>> typeRefDevices = new ParameterizedTypeReference<Resources<Sushiprovider>>() {};
         Resources<Sushiprovider> resUsers = tb.toObject(typeRefDevices);
@@ -76,7 +76,7 @@ public class SchedulerConfig {
 
     private int callBatchJob(String service, String identifier) throws IOException {
         HttpClient client = new HttpClient();
-        GetMethod get = new GetMethod("services/batch/run/" + service + "?identifier=" + identifier);
+        GetMethod get = new GetMethod("http://localhost:8082/services/batch/run/" + service + "?identifier=" + identifier);
         return client.executeMethod(get);
     }
     
