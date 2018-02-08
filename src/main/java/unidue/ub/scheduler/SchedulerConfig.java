@@ -2,6 +2,8 @@ package unidue.ub.scheduler;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.ParameterizedTypeReference;
@@ -29,21 +31,40 @@ public class SchedulerConfig {
 
     private final static long HalfAYear = 182L * dayInMillis;
 
+    private final Logger log = LoggerFactory.getLogger(SchedulerConfig.class);
+
     @Scheduled(cron="0 0 1 * * 6")
-    public void updateNotations() throws IOException {
-        callRestService("http://localhost:8082/services/run/notationbuilder");
+    public void updateNotations() {
+        try {
+            callRestService("http://localhost:8082/services/run/notationbuilder");
+        } catch (IOException e) {
+            log.warn("could not run notation update");
+            e.printStackTrace();
+        }
+
     }
 
     @Scheduled(cron="0 0 2 * * *")
-    public void updateNrequests() throws IOException {
+    public void updateNrequests() {
+        try {
         callBatchJob("nrequests","");
+        } catch (IOException e) {
+            log.warn("could not run eventanalyzer");
+            e.printStackTrace();
+        }
     }
 
     @Scheduled(cron="0 0 23 * * SAT")
-    public void runEventanalyzer() throws IOException, URISyntaxException {
-        List<Stockcontrol> stockcontrols = (List<Stockcontrol>) getAllActiveStockcontrol(HalfAYear);
-        for (Stockcontrol stockcontrol : stockcontrols) {
-            callBatchJob("eventanalyzer",stockcontrol.getIdentifier());
+    public void runEventanalyzer() {
+        List<Stockcontrol> stockcontrols = new ArrayList<>();
+        try {
+            stockcontrols = (List<Stockcontrol>) getAllActiveStockcontrol(HalfAYear);
+            for (Stockcontrol stockcontrol : stockcontrols) {
+                callBatchJob("eventanalyzer", stockcontrol.getIdentifier());
+            }
+        } catch (Exception e) {
+            log.warn("could not run eventanalyzer");
+            e.printStackTrace();
         }
     }
 
@@ -63,14 +84,20 @@ public class SchedulerConfig {
     }
 
     @Scheduled(cron="0 0 1 15 * ?")
-    public void collectSushi() throws URISyntaxException, IOException {
-        Traverson traverson = new Traverson(new URI("http://localhost:8082/api/settings/sushiprovider"), MediaTypes.HAL_JSON);
-        Traverson.TraversalBuilder tb = traverson.follow("$._links.self.href");
-        ParameterizedTypeReference<Resources<Sushiprovider>> typeRefDevices = new ParameterizedTypeReference<Resources<Sushiprovider>>() {};
-        Resources<Sushiprovider> resUsers = tb.toObject(typeRefDevices);
-        Collection<Sushiprovider> sushiproviders = resUsers.getContent();
-        for (Sushiprovider sushiprovider : sushiproviders) {
-            callBatchJob("sushi",sushiprovider.getIdentifier());
+    public void collectSushi() {
+        try {
+            Traverson traverson = new Traverson(new URI("http://localhost:8082/api/settings/sushiprovider"), MediaTypes.HAL_JSON);
+            Traverson.TraversalBuilder tb = traverson.follow("$._links.self.href");
+            ParameterizedTypeReference<Resources<Sushiprovider>> typeRefDevices = new ParameterizedTypeReference<Resources<Sushiprovider>>() {
+            };
+            Resources<Sushiprovider> resUsers = tb.toObject(typeRefDevices);
+            Collection<Sushiprovider> sushiproviders = resUsers.getContent();
+            for (Sushiprovider sushiprovider : sushiproviders) {
+                callBatchJob("sushi", sushiprovider.getIdentifier());
+            }
+        } catch (Exception e) {
+            log.warn("could not run SUSHI collector");
+            e.printStackTrace();
         }
     }
 
