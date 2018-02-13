@@ -36,7 +36,8 @@ public class SchedulerConfig {
     @Scheduled(cron="0 0 1 * * 6")
     public void updateNotations() {
         try {
-            callRestService("http://localhost:8082/services/run/notationbuilder");
+            int response = callRestService("http://localhost:11844/run/notationbuilder");
+            log.info("service returned " + response);
         } catch (IOException e) {
             log.warn("could not run notation update");
             e.printStackTrace();
@@ -47,7 +48,8 @@ public class SchedulerConfig {
     @Scheduled(cron="0 0 2 * * *")
     public void updateNrequests() {
         try {
-        callBatchJob("nrequests","");
+        int response = callBatchJob("nrequests","");
+        log.info("batch job returned " + response);
         } catch (IOException e) {
             log.warn("could not run eventanalyzer");
             e.printStackTrace();
@@ -60,7 +62,8 @@ public class SchedulerConfig {
         try {
             stockcontrols = (List<Stockcontrol>) getAllActiveStockcontrol(HalfAYear);
             for (Stockcontrol stockcontrol : stockcontrols) {
-                callBatchJob("eventanalyzer", stockcontrol.getIdentifier());
+                int response = callBatchJob("eventanalyzer", stockcontrol.getIdentifier());
+                log.info("batch job returned " + response);
             }
         } catch (Exception e) {
             log.warn("could not run eventanalyzer");
@@ -93,7 +96,8 @@ public class SchedulerConfig {
             Resources<Sushiprovider> resUsers = tb.toObject(typeRefDevices);
             Collection<Sushiprovider> sushiproviders = resUsers.getContent();
             for (Sushiprovider sushiprovider : sushiproviders) {
-                callBatchJob("sushi", sushiprovider.getIdentifier());
+                int response = callBatchJob("sushi", sushiprovider.getIdentifier());
+                log.info("batch job returned " + response);
             }
         } catch (Exception e) {
             log.warn("could not run SUSHI collector");
@@ -103,11 +107,12 @@ public class SchedulerConfig {
 
     private int callBatchJob(String service, String identifier) throws IOException {
         HttpClient client = new HttpClient();
-        GetMethod get = new GetMethod("http://localhost:8082/services/batch/run/" + service + "?identifier=" + identifier);
+        GetMethod get = new GetMethod("http://localhost:11822/batch/" + service + "?identifier=" + identifier);
         return client.executeMethod(get);
     }
     
     private int callRestService(String url) throws IOException {
+
         HttpClient client = new HttpClient();
         GetMethod get = new GetMethod(url);
         return client.executeMethod(get);
