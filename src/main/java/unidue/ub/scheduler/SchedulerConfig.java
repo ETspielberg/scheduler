@@ -86,7 +86,7 @@ public class SchedulerConfig {
         return toBeExecuted;
     }
 
-    @Scheduled(cron="0 0 1 15 * ?")
+    @Scheduled(cron="0 0 1 19 * ?")
     public void collectSushi() {
         try {
             Traverson traverson = new Traverson(new URI("http://localhost:8082/api/settings/sushiprovider"), MediaTypes.HAL_JSON);
