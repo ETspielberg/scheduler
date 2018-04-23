@@ -10,8 +10,10 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.hateoas.client.Traverson;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.client.RestTemplate;
 import unidue.ub.settings.fachref.Profile;
 import unidue.ub.settings.fachref.Stockcontrol;
 import unidue.ub.settings.fachref.Sushiprovider;
@@ -37,7 +39,7 @@ public class SchedulerConfig {
     public void updateNotations() {
         try {
             int response = callRestService("http://localhost:11844/run/notationbuilder");
-            log.info("service returned " + response);
+            log.info("notationbuilder returned " + response);
         } catch (IOException e) {
             log.warn("could not run notation update");
             e.printStackTrace();
@@ -49,9 +51,9 @@ public class SchedulerConfig {
     public void updateNrequests() {
         try {
         int response = callBatchJob("nrequests","");
-        log.info("batch job returned " + response);
+        log.info("Nrequests batch job returned " + response);
         } catch (IOException e) {
-            log.warn("could not run eventanalyzer");
+            log.warn("could not run nrequests collector");
             e.printStackTrace();
         }
     }
@@ -63,7 +65,7 @@ public class SchedulerConfig {
             stockcontrols = (List<Stockcontrol>) getAllActiveStockcontrol(HalfAYear);
             for (Stockcontrol stockcontrol : stockcontrols) {
                 int response = callBatchJob("eventanalyzer", stockcontrol.getIdentifier());
-                log.info("batch job returned " + response);
+                log.info("eventanalyzer job returned " + response);
             }
         } catch (Exception e) {
             log.warn("could not run eventanalyzer");
@@ -72,13 +74,12 @@ public class SchedulerConfig {
     }
 
     private List<? extends Profile> getAllActiveStockcontrol(long interval) throws URISyntaxException {
-        Traverson traverson = new Traverson(new URI("http://localhost:8082/api/settings/stockcontrol"), MediaTypes.HAL_JSON);
-        Traverson.TraversalBuilder tb = traverson.follow("$._links.self.href");
-        ParameterizedTypeReference<Resources<Stockcontrol>> typeRefDevices = new ParameterizedTypeReference<Resources<Stockcontrol>>() {};
-        Resources<Stockcontrol> resUsers = tb.toObject(typeRefDevices);
-        Collection<Stockcontrol> foundNotations = resUsers.getContent();
+        Stockcontrol[] stockcontrols = new RestTemplate().getForEntity(
+                "http://localhost:8082/api/settings/stockcontrol/all",
+                Stockcontrol[].class
+        ).getBody();
         List<Stockcontrol> toBeExecuted = new ArrayList<>();
-        for (Stockcontrol stockcontrol : foundNotations) {
+        for (Stockcontrol stockcontrol : stockcontrols) {
             if (stockcontrol.getLastrun().getTime() < System.currentTimeMillis()- interval) {
                 toBeExecuted.add(stockcontrol);
             }
@@ -86,18 +87,16 @@ public class SchedulerConfig {
         return toBeExecuted;
     }
 
-    @Scheduled(cron="0 0 1 19 * ?")
+    @Scheduled(cron="0 0 1 24 * ?")
     public void collectSushi() {
         try {
-            Traverson traverson = new Traverson(new URI("http://localhost:8082/api/settings/sushiprovider"), MediaTypes.HAL_JSON);
-            Traverson.TraversalBuilder tb = traverson.follow("$._links.self.href");
-            ParameterizedTypeReference<Resources<Sushiprovider>> typeRefDevices = new ParameterizedTypeReference<Resources<Sushiprovider>>() {
-            };
-            Resources<Sushiprovider> resUsers = tb.toObject(typeRefDevices);
-            Collection<Sushiprovider> sushiproviders = resUsers.getContent();
+            Sushiprovider[] sushiproviders = new RestTemplate().getForEntity(
+                    "http://localhost:8082/api/settings/sushiprovider/all",
+                    Sushiprovider[].class
+            ).getBody();
             for (Sushiprovider sushiprovider : sushiproviders) {
                 int response = callBatchJob("sushi", sushiprovider.getIdentifier());
-                log.info("batch job returned " + response);
+                log.info("sushi job returned " + response);
             }
         } catch (Exception e) {
             log.warn("could not run SUSHI collector");
