@@ -4,13 +4,7 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.Resources;
-import org.springframework.hateoas.client.Traverson;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
@@ -19,10 +13,7 @@ import unidue.ub.settings.fachref.Stockcontrol;
 import unidue.ub.settings.fachref.Sushiprovider;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Configuration
@@ -60,12 +51,12 @@ public class SchedulerConfig {
 
     @Scheduled(cron="0 0 23 * * SAT")
     public void runEventanalyzer() {
-        List<Stockcontrol> stockcontrols = new ArrayList<>();
+        List<Stockcontrol> stockcontrols;
         try {
             stockcontrols = (List<Stockcontrol>) getAllActiveStockcontrol(HalfAYear);
             for (Stockcontrol stockcontrol : stockcontrols) {
                 int response = callBatchJob("eventanalyzer", stockcontrol.getIdentifier());
-                log.info("eventanalyzer job returned " + response);
+                log.info("eventanalyzer job for stockcontrol " + stockcontrol.getIdentifier() + " returned " + response);
             }
         } catch (Exception e) {
             log.warn("could not run eventanalyzer");
@@ -73,7 +64,7 @@ public class SchedulerConfig {
         }
     }
 
-    private List<? extends Profile> getAllActiveStockcontrol(long interval) throws URISyntaxException {
+    private List<? extends Profile> getAllActiveStockcontrol(long interval) {
         Stockcontrol[] stockcontrols = new RestTemplate().getForEntity(
                 "http://localhost:8082/api/settings/stockcontrol/all",
                 Stockcontrol[].class
@@ -87,7 +78,7 @@ public class SchedulerConfig {
         return toBeExecuted;
     }
 
-    @Scheduled(cron="0 0 1 24 * ?")
+    @Scheduled(cron="0 0 1 25 * ?")
     public void collectSushi() {
         try {
             Sushiprovider[] sushiproviders = new RestTemplate().getForEntity(
@@ -95,8 +86,17 @@ public class SchedulerConfig {
                     Sushiprovider[].class
             ).getBody();
             for (Sushiprovider sushiprovider : sushiproviders) {
-                int response = callBatchJob("sushi", sushiprovider.getIdentifier());
-                log.info("sushi job returned " + response);
+                int responseJROne = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=JR1");
+                log.info("sushi JR1 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responseJROne);
+
+                int responseBROne = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=BR1");
+                log.info("sushi BR1 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responseBROne);
+
+                int responseBRTwo = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=BR2");
+                log.info("sushi BR2 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responseBRTwo);
+
+                int responsePROne = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=PR1");
+                log.info("sushi PR1 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responsePROne);
             }
         } catch (Exception e) {
             log.warn("could not run SUSHI collector");
