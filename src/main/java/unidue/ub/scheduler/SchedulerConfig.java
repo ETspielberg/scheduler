@@ -78,7 +78,7 @@ public class SchedulerConfig {
         return toBeExecuted;
     }
 
-    @Scheduled(cron="0 0 15 25 * ?")
+    @Scheduled(cron="0 0 20 25 * ?")
     public void collectSushi() {
         try {
             Sushiprovider[] sushiproviders = new RestTemplate().getForEntity(
@@ -106,7 +106,7 @@ public class SchedulerConfig {
 
     private int callBatchJob(String service, String identifier, String options) throws IOException {
         HttpClient client = new HttpClient();
-        GetMethod get = new GetMethod("http://localhost:11822/batch/" + service + "?identifier=" + identifier + options);
+        GetMethod get = new GetMethod("http://localhost:11822/" + service + "?identifier=" + identifier + options);
         return client.executeMethod(get);
     }
     
