@@ -41,7 +41,7 @@ public class SchedulerConfig {
     @Scheduled(cron="0 0 2 * * *")
     public void updateNrequests() {
         try {
-        int response = callBatchJob("nrequests","");
+        int response = callBatchJob("nrequests","", "");
         log.info("Nrequests batch job returned " + response);
         } catch (IOException e) {
             log.warn("could not run nrequests collector");
@@ -55,7 +55,7 @@ public class SchedulerConfig {
         try {
             stockcontrols = (List<Stockcontrol>) getAllActiveStockcontrol(HalfAYear);
             for (Stockcontrol stockcontrol : stockcontrols) {
-                int response = callBatchJob("eventanalyzer", stockcontrol.getIdentifier());
+                int response = callBatchJob("eventanalyzer", stockcontrol.getIdentifier(), "");
                 log.info("eventanalyzer job for stockcontrol " + stockcontrol.getIdentifier() + " returned " + response);
             }
         } catch (Exception e) {
@@ -78,7 +78,7 @@ public class SchedulerConfig {
         return toBeExecuted;
     }
 
-    @Scheduled(cron="0 0 1 25 * ?")
+    @Scheduled(cron="0 0 15 25 * ?")
     public void collectSushi() {
         try {
             Sushiprovider[] sushiproviders = new RestTemplate().getForEntity(
@@ -86,16 +86,16 @@ public class SchedulerConfig {
                     Sushiprovider[].class
             ).getBody();
             for (Sushiprovider sushiprovider : sushiproviders) {
-                int responseJROne = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=JR1");
+                int responseJROne = callBatchJob("sushi", sushiprovider.getIdentifier(), "&mode=update&type=JR1");
                 log.info("sushi JR1 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responseJROne);
 
-                int responseBROne = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=BR1");
+                int responseBROne = callBatchJob("sushi", sushiprovider.getIdentifier(), "&mode=update&type=BR1");
                 log.info("sushi BR1 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responseBROne);
 
-                int responseBRTwo = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=BR2");
+                int responseBRTwo = callBatchJob("sushi", sushiprovider.getIdentifier(), "&mode=update&type=BR2");
                 log.info("sushi BR2 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responseBRTwo);
 
-                int responsePROne = callBatchJob("sushi?identifier=", sushiprovider.getIdentifier() + "&mode=update&type=PR1");
+                int responsePROne = callBatchJob("sushi", sushiprovider.getIdentifier(), "&mode=update&type=PR1");
                 log.info("sushi PR1 job  for sushiprovider " + sushiprovider.getIdentifier() + " returned " + responsePROne);
             }
         } catch (Exception e) {
@@ -104,9 +104,9 @@ public class SchedulerConfig {
         }
     }
 
-    private int callBatchJob(String service, String identifier) throws IOException {
+    private int callBatchJob(String service, String identifier, String options) throws IOException {
         HttpClient client = new HttpClient();
-        GetMethod get = new GetMethod("http://localhost:11822/batch/" + service + "?identifier=" + identifier);
+        GetMethod get = new GetMethod("http://localhost:11822/batch/" + service + "?identifier=" + identifier + options);
         return client.executeMethod(get);
     }
     
